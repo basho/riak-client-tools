@@ -17,15 +17,20 @@ opt_use_security='false'
 opt_default_backend='bitcask'
 declare -i opt_node_count=$default_node_count
 
-script_dir=''
-script_path=''
-if hash realpath 2>/dev/null
-then
-    script_dir="$(dirname $0)"
-    script_path="$(realpath $script_dir)"
-else
-    script_path="$(perl -e 'use File::Basename;use Cwd q(abs_path);print dirname(abs_path(shift))' $0)"
-fi
+function get_realpath
+{
+    local path="$1"
+    if hash realpath 2>/dev/null
+    then
+        realpath "$path"
+    else
+        perl -e 'use File::Basename;use Cwd q(abs_path);print dirname(abs_path(shift))' "$path"
+    fi
+}
+
+script_dir="$(dirname $0)"
+script_path="$(get_realpath $script_dir)"
+
 PATH="$PATH:$script_path"
 
 function make_temp_file
@@ -149,9 +154,10 @@ esac
 if [[ $opt_use_security == 'true' ]]
 then
     pinfo 'NOTE: using Riak Security. This will require HTTPS and TLS connections.'
-    security_cacert_file="$script_path/test-ca/certs/cacert.pem"
-    security_cert_file="$script_path/test-ca/certs/riak-test-cert.pem"
-    security_key_file="$script_path/test-ca/private/riak-test-key.pem"
+    declare -r ca_path="$(get_realpath $script_path/..)";
+    security_cacert_file="$ca_path/test-ca/certs/cacert.pem"
+    security_cert_file="$ca_path/test-ca/certs/riak-test-cert.pem"
+    security_key_file="$ca_path/test-ca/private/riak-test-key.pem"
     for file in $security_cacert_file $security_cert_file $security_key_file
     do
         if [[ ! -f $file  ]]
