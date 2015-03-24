@@ -3,6 +3,19 @@
 set -o errexit
 set -o nounset
 
+# NB: can't put this in common.bash since finding
+# common.bash depends on it
+function get_realpath
+{
+    local path="$1"
+    if hash realpath 2>/dev/null
+    then
+        realpath "$path"
+    else
+        perl -e 'use Cwd q(abs_path);print abs_path(shift)' "$path"
+    fi
+}
+
 # Defaults
 declare -i i=0
 declare -r riak_admin=dev1/bin/riak-admin
@@ -17,31 +30,10 @@ opt_use_security='false'
 opt_default_backend='bitcask'
 declare -i opt_node_count=$default_node_count
 
-function get_realpath
-{
-    local path="$1"
-    if hash realpath 2>/dev/null
-    then
-        realpath "$path"
-    else
-        perl -e 'use File::Basename;use Cwd q(abs_path);print dirname(abs_path(shift))' "$path"
-    fi
-}
-
 script_dir="$(dirname $0)"
 script_path="$(get_realpath $script_dir)"
-
-PATH="$PATH:$script_path"
-
-function make_temp_file
-{
-    local template="$1"
-    if [[ $template != *XXXXXX ]]
-    then
-        template="$template.XXXXXX"
-    fi
-    mktemp -t "$template"
-}
+export PATH="$PATH:$script_path"
+source "$script_path/common.bash"
 
 function transfers_in_progress
 {
@@ -61,37 +53,6 @@ function transfers_in_progress
     return $retval
 }
 
-function now
-{
-    date '+%Y-%m-%d %H:%M:%S'
-}
-
-function pwarn
-{
-    echo "$(now) [warning]: $@" 1>&2
-}
-
-function perr
-{
-    echo "$(now) [error]: $@" 1>&2
-}
-
-function pinfo
-{
-    echo "$(now) [info]: $@"
-}
-
-function errexit
-{
-    perr "$@"
-    exit 1
-}
-
-function onexit
-{
-    echo Exiting!
-    (( ${#DIRSTACK[*]} > 1 )) && popd
-}
 
 function wait_for_transfers
 {
@@ -166,8 +127,6 @@ then
         fi
     done
 fi
-
-trap onexit EXIT
 
 declare -r dev_cluster_path="${opt_dev_cluster_path:-$default_dev_cluster_path}"
 
