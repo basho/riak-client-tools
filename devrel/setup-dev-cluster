@@ -154,7 +154,7 @@ esac
 if [[ $opt_use_security == 'true' ]]
 then
     pinfo 'NOTE: using Riak Security. This will require HTTPS and TLS connections.'
-    declare -r ca_path="$(get_realpath $script_path/..)";
+    declare -r ca_path="$(get_realpath $script_path/../)";
     security_cacert_file="$ca_path/test-ca/certs/cacert.pem"
     security_cert_file="$ca_path/test-ca/certs/riak-test-cert.pem"
     security_key_file="$ca_path/test-ca/private/riak-test-key.pem"
