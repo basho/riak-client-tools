@@ -183,6 +183,10 @@ for datadir in dev*/data/*
 do
     find $datadir -type f -delete
 done
+for logdir in dev*/log
+do
+    find $logdir -type f -delete
+done
 set -o errexit
 
 declare -i pb_port=10017
