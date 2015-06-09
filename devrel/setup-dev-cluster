@@ -196,9 +196,9 @@ if [[ $opt_cleanup_only == 'true' ]]; then
     exit 0;
 fi
 
-declare -i pb_port=10017
-declare -i http_port=10018
-declare -i https_port=10418
+declare -i pb_port=8087
+declare -i http_port=8098
+declare -i https_port=10011
 
 pinfo "Configuring riak.conf"
 
