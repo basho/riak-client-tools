@@ -22,12 +22,12 @@ declare -r riak_admin=dev1/bin/riak-admin
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
 declare -ir default_node_count=4
 declare -ir strong_consistency_node_count=4
-
 # Option vars
 opt_strong_consistency='false'
 opt_legacy_search='false'
 opt_use_security='false'
 opt_default_backend='bitcask'
+opt_cleanup_only='false'
 declare -i opt_node_count=$default_node_count
 
 script_dir="$(dirname $0)"
@@ -78,11 +78,12 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c]
         Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
 -s      Set up cluster to use Riak Security
 -b      Default backend to use (Default: \"bitcask\", can be \"leveldb\")
+-x      Shut down any nodes and clean up directories.
 "
       exit 0
 }
 
-while getopts "hslb:p:n:c" opt; do
+while getopts "hslb:p:n:c:x" opt; do
     case $opt in
         l)
             opt_legacy_search='true';;
@@ -96,6 +97,8 @@ while getopts "hslb:p:n:c" opt; do
             opt_use_security='true';;
         b)
             opt_default_backend="$OPTARG";;
+        x)
+            opt_cleanup_only='true';;
         *)
             usage;;
     esac
@@ -183,11 +186,19 @@ for datadir in dev*/data/*
 do
     find $datadir -type f -delete
 done
+for logdir in dev*/log
+do
+    find $logdir -type f -delete
+done
 set -o errexit
 
-declare -i pb_port=8087
-declare -i http_port=8098
-declare -i https_port=10011
+if [[ $opt_cleanup_only == 'true' ]]; then
+    exit 0;
+fi
+
+declare -i pb_port=10017
+declare -i http_port=10018
+declare -i https_port=10418
 
 pinfo "Configuring riak.conf"
 
