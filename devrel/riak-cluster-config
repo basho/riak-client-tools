@@ -10,12 +10,14 @@ $riak_admin bucket-type create jvtest_maps '{"props":{"datatype":"map"}}'
 $riak_admin bucket-type create jvtest_sets '{"props":{"datatype":"set"}}'
 $riak_admin bucket-type create jvtest_counters '{"props":{"datatype":"counter"}}'
 $riak_admin bucket-type create jvtest_test_type '{"props":{}}'
+$riak_admin bucket-type create write_once '{"props":{"write_once":true}}'
 
 $riak_admin bucket-type activate jvtest_yz_search
 $riak_admin bucket-type activate jvtest_maps
 $riak_admin bucket-type activate jvtest_sets
 $riak_admin bucket-type activate jvtest_counters
 $riak_admin bucket-type activate jvtest_test_type
+$riak_admin bucket-type activate write_once
 
 if [[ $strong_consistency == 'true' ]]
 then
