@@ -20,7 +20,7 @@ function get_realpath
 declare -i i=0
 declare -r riak_admin=dev1/bin/riak-admin
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
-declare -ir default_node_count=4
+declare -ir default_node_count=1
 declare -ir strong_consistency_node_count=4
 # Option vars
 opt_strong_consistency='false'
