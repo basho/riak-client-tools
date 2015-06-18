@@ -1,0 +1,4 @@
+# name|storage_backend|config
+bitcask_backend|bitcask|data_root=$(platform_data_dir)/bitcask,io_mode=erlang
+leveldb_backend|leveldb|data_root=$(platform_data_dir)/leveldb,maximum_memory.percent=30
+memory_backend|memory|ttl=10s,max_memory_per_vnode=4MB

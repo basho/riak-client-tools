@@ -20,29 +20,30 @@ ring_size = 16
 search = on
 storage_backend = multi
 multi_backend.default = $default_backend_name
+EOT
 
-multi_backend.bitcask_backend.storage_backend = bitcask
-multi_backend.bitcask_backend.bitcask.data_root = \$(platform_data_dir)/bitcask
-multi_backend.bitcask_backend.bitcask.io_mode = erlang
+while IFS='|' read $
+do
+done < $backend_config_file
+# multi_backend.bitcask_backend.storage_backend = bitcask
+# multi_backend.bitcask_backend.bitcask.data_root = \$(platform_data_dir)/bitcask
+# multi_backend.bitcask_backend.bitcask.io_mode = erlang
+# multi_backend.leveldb_backend.storage_backend = leveldb
+# multi_backend.leveldb_backend.leveldb.data_root = \$(platform_data_dir)/leveldb
+# multi_backend.leveldb_backend.leveldb.maximum_memory.percent = 30
+# multi_backend.mem_backend.storage_backend = memory
+# multi_backend.mem_backend.memory_backend.ttl = 10s
+# multi_backend.mem_backend.memory_backend.max_memory_per_vnode = 4MB
 
-multi_backend.leveldb_backend.storage_backend = leveldb
-multi_backend.leveldb_backend.leveldb.data_root = \$(platform_data_dir)/leveldb
-multi_backend.leveldb_backend.leveldb.maximum_memory.percent = 30
-
-multi_backend.mem_backend.storage_backend = memory
-multi_backend.mem_backend.memory_backend.ttl = 10s
-multi_backend.mem_backend.memory_backend.max_memory_per_vnode = 4MB
-
+cat >> $out_file <<EOT
 tls_protocols.sslv3 = off
 tls_protocols.tlsv1 = on
 tls_protocols.tlsv1.1 = on
 tls_protocols.tlsv1.2 = on
 check_crl = off
-
 listener.http.internal = 0.0.0.0:$http_port
 listener.protobuf.internal = 0.0.0.0:$pb_port
 search.solr.start_timeout = 60s
-
 EOT
 
 if (( https_port > 0 ))

@@ -1,0 +1,10 @@
+# name|json
+plain|{"props":{}}
+search_type|{"props":{}}
+maps|{"props":{"datatype":"map"}}
+sets|{"props":{"datatype":"set"}}
+counters|{"props":{"datatype":"counter"}}
+yokozuna|{"props":{}}
+leveldb_type|{"props":{"backend":"leveldb_backend"}}
+memory_type|{"props":{"backend":"mem_backend"}}
+write_once|{"props":{"write_once":true}}
