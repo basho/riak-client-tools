@@ -83,7 +83,7 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c]
       exit 0
 }
 
-while getopts "hslb:p:n:c:x" opt; do
+while getopts "hslcxb:p:n:" opt; do
     case $opt in
         l)
             opt_legacy_search='true';;
