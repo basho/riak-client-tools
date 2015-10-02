@@ -186,6 +186,17 @@ for datadir in dev*/data/*
 do
     find $datadir -type f -delete
 done
+
+for tsdetsfile in dev*/data/riak_kv_compile_tab.dets
+do
+    rm $tsdetsfile
+done
+
+for datadir in dev*/data/*
+do
+    find $datadir -type f -delete
+done
+
 for logdir in dev*/log
 do
     find $logdir -type f -delete
