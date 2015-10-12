@@ -26,7 +26,6 @@ declare -ir strong_consistency_node_count=4
 opt_strong_consistency='false'
 opt_legacy_search='false'
 opt_use_security='false'
-opt_default_backend='bitcask'
 opt_cleanup_only='false'
 declare -i opt_node_count=$default_node_count
 
@@ -37,31 +36,40 @@ source "$script_path/common.bash"
 
 function transfers_in_progress
 {
-    local -i retval=0
+    local retval='in_progress'
     local transfers_out=$(make_temp_file riak-admin-transfers)
 
-    set +o errexit
     $riak_admin transfers > $transfers_out 2>&1
-    if grep -iqF 'No transfers active' $transfers_out
+    if grep -iqF 'Node is not running' $transfers_out
     then
-        retval=1 # No longer in progress, return false
+        perr 'Riak transfers did not complete. Error!'
+        retval='error' # Return error
+    elif grep -iqF 'No transfers active' $transfers_out
+    then
+        retval='done' # No longer in progress
     else
-        retval=0
+        retval='in_progress' # Still in progress
     fi
-    # rm -vf $transfers_out
-    set -o errexit
-    return $retval
+    rm -f $transfers_out
+    echo $retval
 }
-
 
 function wait_for_transfers
 {
     sleep 5
-    while transfers_in_progress
+    local transfer_status="$(transfers_in_progress)"
+    while [[ $transfer_status == 'in_progress' ]]
     do
-        pinfo 'Transfers in progress'
+        pinfo 'Transfers in progress.'
         sleep 5
+        transfer_status=$(transfers_in_progress)
     done
+    pinfo "Transfer status: $transfer_status"
+
+    if [[ $transfer_status == 'error' ]]
+    then
+        errexit 'Transfers errored!'
+    fi
 }
 
 function usage
@@ -77,7 +85,6 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c]
 -c      Set up cluster for Strong Consistency
         Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
 -s      Set up cluster to use Riak Security
--b      Default backend to use (Default: \"bitcask\", can be \"leveldb\")
 -x      Shut down any nodes and clean up directories.
 "
       exit 0
@@ -95,25 +102,12 @@ while getopts "hslcxb:p:n:" opt; do
             opt_strong_consistency='true';;
         s)
             opt_use_security='true';;
-        b)
-            opt_default_backend="$OPTARG";;
         x)
             opt_cleanup_only='true';;
         *)
             usage;;
     esac
 done
-
-default_backend='bitcask'
-case $opt_default_backend in
-    bitcask)
-        default_backend='bitcask';;
-    leveldb)
-        default_backend='leveldb';;
-    *)
-        pinfo '-b argument must either be bitcask or leveldb.'
-        usage;;
-esac
 
 if [[ $opt_use_security == 'true' ]]
 then
@@ -175,6 +169,7 @@ done
 pinfo "Stopping Riak"
 
 set +o errexit
+
 for devdir in dev*
 do
     $devdir/bin/riak stop > /dev/null
@@ -182,14 +177,18 @@ done
 
 pinfo "Removing old Riak data"
 
+rm -f dev*/data/riak_kv_compile_tab.dets
+
 for datadir in dev*/data/*
 do
     find $datadir -type f -delete
 done
+
 for logdir in dev*/log
 do
     find $logdir -type f -delete
 done
+
 set -o errexit
 
 if [[ $opt_cleanup_only == 'true' ]]; then
@@ -218,9 +217,9 @@ do
 
     if [[ $opt_use_security == 'true' ]]
     then
-        gen-riak-conf "$riak_conf" $http_port $pb_port $https_port "$security_cacert_file" "$security_cert_file" "$security_key_file" "$default_backend"
+        gen-riak-conf "$riak_conf" $http_port $pb_port $https_port "$security_cacert_file" "$security_cert_file" "$security_key_file" leveldb
     else
-        gen-riak-conf "$riak_conf" $http_port $pb_port 0 '' '' '' "$default_backend"
+        gen-riak-conf "$riak_conf" $http_port $pb_port 0 '' '' '' leveldb
     fi
 
     gen-adv-conf $adv_conf
