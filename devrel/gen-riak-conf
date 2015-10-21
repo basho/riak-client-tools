@@ -17,7 +17,7 @@ declare -r default_backend="${8:-bitcask}"
 
 cat >> $out_file <<EOT
 ring_size = 16
-search = on
+search = off
 storage_backend = leveldb
 anti_entropy = passive
 
