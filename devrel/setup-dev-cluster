@@ -199,6 +199,10 @@ for logdir in dev*/log
 do
     find $logdir -type f -delete
 done
+for yz_temp in dev*/data/yz_temp
+do
+    rm -rf $yz_temp
+done
 set -o errexit
 
 if [[ $opt_cleanup_only == 'true' ]]; then
