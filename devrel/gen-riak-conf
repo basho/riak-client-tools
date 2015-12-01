@@ -12,7 +12,7 @@ declare -r default_backend_name='leveldb_backend'
 
 cat >> $out_file <<EOT
 ring_size = 16
-search = off
+search = on
 storage_backend = leveldb
 anti_entropy = passive
 
