@@ -37,31 +37,40 @@ source "$script_path/common.bash"
 
 function transfers_in_progress
 {
-    local -i retval=0
+    local retval='in_progress'
     local transfers_out=$(make_temp_file riak-admin-transfers)
 
-    set +o errexit
     $riak_admin transfers > $transfers_out 2>&1
-    if grep -iqF 'No transfers active' $transfers_out
+    if grep -iqF 'Node is not running' $transfers_out
     then
-        retval=1 # No longer in progress, return false
+        perr 'Riak transfers did not complete. Error!'
+        retval='error' # Return error
+    elif grep -iqF 'No transfers active' $transfers_out
+    then
+        retval='done' # No longer in progress
     else
-        retval=0
+        retval='in_progress' # Still in progress
     fi
-    # rm -vf $transfers_out
-    set -o errexit
-    return $retval
+    rm -f $transfers_out
+    echo $retval
 }
-
 
 function wait_for_transfers
 {
     sleep 5
-    while transfers_in_progress
+    local transfer_status="$(transfers_in_progress)"
+    while [[ $transfer_status == 'in_progress' ]]
     do
-        pinfo 'Transfers in progress'
+        pinfo 'Transfers in progress.'
         sleep 5
+        transfer_status=$(transfers_in_progress)
     done
+    pinfo "Transfer status: $transfer_status"
+
+    if [[ $transfer_status == 'error' ]]
+    then
+        errexit 'Transfers errored!'
+    fi
 }
 
 function usage
@@ -83,7 +92,7 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c]
       exit 0
 }
 
-while getopts "hslb:p:n:c:x" opt; do
+while getopts "hslcxb:p:n:" opt; do
     case $opt in
         l)
             opt_legacy_search='true';;
@@ -189,6 +198,10 @@ done
 for logdir in dev*/log
 do
     find $logdir -type f -delete
+done
+for yz_temp in dev*/data/yz_temp
+do
+    rm -rf $yz_temp
 done
 set -o errexit
 
