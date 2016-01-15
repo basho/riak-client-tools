@@ -259,12 +259,16 @@ for ((i = 1; i <= node_count; ++i))
 do
     devdir="dev$i"
     $devdir/bin/riak start
+    echo "Starting $devdir"
+    sleep 5
 done
 
 for ((i = 2; i <= node_count; ++i))
 do
     devdir="dev$i"
     $devdir/bin/riak-admin cluster join dev1@127.0.0.1
+    echo "Joining $devdir"
+    sleep 5
 done
 
 $riak_admin cluster plan
