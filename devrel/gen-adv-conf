@@ -8,7 +8,9 @@ cat > $out_file <<'EOT'
         {delete_mode, immediate}
     ]},
     {riak_core, [
-        {target_n_val, 5}
+        {target_n_val, 5},
+        {forced_ownership_handoff, 100},
+        {handoff_concurrency, 100}
     ]}
 ].
 EOT
