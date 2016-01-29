@@ -33,6 +33,11 @@ function pinfo
     echo "$(now) [info]: $@"
 }
 
+function pinfo_n
+{
+    echo -n "$(now) [info]: $@"
+}
+
 function pdebug
 {
     if [[ $debug == 'true' ]]
