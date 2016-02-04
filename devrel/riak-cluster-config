@@ -9,6 +9,7 @@ $riak_admin bucket-type create jvtest_yz_search '{"props":{}}'
 $riak_admin bucket-type create jvtest_maps '{"props":{"datatype":"map"}}'
 $riak_admin bucket-type create jvtest_sets '{"props":{"datatype":"set"}}'
 $riak_admin bucket-type create jvtest_counters '{"props":{"datatype":"counter"}}'
+$riak_admin bucket-type create other_counters '{"props":{"datatype":"counter","allow_mult":true}}'
 $riak_admin bucket-type create jvtest_test_type '{"props":{}}'
 $riak_admin bucket-type create write_once '{"props":{"write_once":true}}'
 
@@ -16,6 +17,7 @@ $riak_admin bucket-type activate jvtest_yz_search
 $riak_admin bucket-type activate jvtest_maps
 $riak_admin bucket-type activate jvtest_sets
 $riak_admin bucket-type activate jvtest_counters
+$riak_admin bucket-type activate other_counters
 $riak_admin bucket-type activate jvtest_test_type
 $riak_admin bucket-type activate write_once
 
@@ -37,10 +39,19 @@ if [[ $use_security == 'true' ]]
 then
     $riak_admin security enable
     $riak_admin security add-group test
+
+    # cert auth users
     $riak_admin security add-user riakuser 'groups=test'
-    $riak_admin security add-user riakpass 'password=Test1234' 'groups=test'
     $riak_admin security add-source riakuser 0.0.0.0/0 certificate
+    $riak_admin security add-user certuser 'groups=test'
+    $riak_admin security add-source certuser 0.0.0.0/0 certificate
+
+    # password auth users
+    $riak_admin security add-user riakpass 'password=Test1234' 'groups=test'
+    $riak_admin security add-user user 'password=password' 'groups=test'
     $riak_admin security add-source riakpass 0.0.0.0/0 password
+    $riak_admin security add-source user 0.0.0.0/0 password
+
     $riak_admin security grant riak_kv.get,riak_kv.put,riak_kv.delete,riak_kv.index,riak_kv.list_keys,riak_kv.list_buckets,riak_kv.mapreduce,riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type,search.admin,search.query on any to all
 fi
 
