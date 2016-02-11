@@ -5,8 +5,10 @@ declare -ir http_port="$2"
 declare -r strong_consistency="${3:-false}"
 declare -r use_security="${4:-false}"
 
-$riak_admin bucket-type create plain '{"props":{}}'
-$riak_admin bucket-type create search_type '{"props":{}}'
+$riak_admin bucket-type create plain
+$riak_admin bucket-type create search_type
+$riak_admin bucket-type create mr
+$riak_admin bucket-type create no_siblings '{"props":{"allow_mult":"false"}}'
 $riak_admin bucket-type create maps '{"props":{"datatype":"map"}}'
 $riak_admin bucket-type create sets '{"props":{"datatype":"set"}}'
 $riak_admin bucket-type create counters '{"props":{"datatype":"counter"}}'
@@ -16,8 +18,10 @@ $riak_admin bucket-type create leveldb_type '{"props":{"backend":"leveldb_backen
 $riak_admin bucket-type create memory_type '{"props":{"backend":"mem_backend"}}'
 $riak_admin bucket-type create write_once '{"props":{"write_once":true}}'
 
-$riak_admin bucket-type activate search_type
 $riak_admin bucket-type activate plain
+$riak_admin bucket-type activate search_type
+$riak_admin bucket-type activate mr
+$riak_admin bucket-type activate no_siblings
 $riak_admin bucket-type activate maps
 $riak_admin bucket-type activate sets
 $riak_admin bucket-type activate counters

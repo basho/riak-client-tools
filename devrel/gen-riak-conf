@@ -7,12 +7,13 @@ declare -ir https_port="${4:-0}"
 declare -r security_cacert_file="$5"
 declare -r security_cert_file="$6"
 declare -r security_key_file="$7"
-declare -r default_backend="${8:-bitcask}"
+declare -r default_backend="${8:-leveldb}"
 
-default_backend_name='bitcask_backend'
-if [[ $default_backend == 'leveldb' ]]
+if [[ $default_backend == 'bitcask' ]]
 then
-    default_backend_name='leveldb_backend'
+    declare -r default_backend_name='bitcask_backend'
+else
+    declare -r default_backend_name='leveldb_backend'
 fi
 
 cat >> $out_file <<EOT
@@ -54,4 +55,3 @@ ssl.certfile = $security_cert_file
 ssl.keyfile = $security_key_file
 EOT
 fi
-

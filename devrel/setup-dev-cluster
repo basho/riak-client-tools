@@ -26,7 +26,7 @@ declare -ir strong_consistency_node_count=4
 opt_strong_consistency='false'
 opt_legacy_search='false'
 opt_use_security='false'
-opt_default_backend='bitcask'
+opt_default_backend='leveldb'
 opt_cleanup_only='false'
 declare -i opt_node_count=$default_node_count
 declare -i opt_delay_riak_ops=0
@@ -87,7 +87,7 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c] [-d <s
 -c      Set up cluster for Strong Consistency
         Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
 -s      Set up cluster to use Riak Security
--b      Default backend to use (Default: \"bitcask\", can be \"leveldb\")
+-b      Default backend to use (Default: \"leveldb\", can be \"bitcask\")
 -x      Shut down any nodes and clean up directories.
 -d      Delay Riak operations (Default: $opt_delay_riak_ops seconds)
 "
@@ -117,12 +117,11 @@ while getopts "hslcxb:p:n:d:" opt; do
     esac
 done
 
-default_backend='bitcask'
 case $opt_default_backend in
     bitcask)
-        default_backend='bitcask';;
+        declare -r default_backend='bitcask';;
     leveldb)
-        default_backend='leveldb';;
+        declare -r default_backend='leveldb';;
     *)
         pinfo '-b argument must either be bitcask or leveldb.'
         usage;;
