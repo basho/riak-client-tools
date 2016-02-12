@@ -62,6 +62,6 @@ then
     $riak_admin security add-source riakpass 0.0.0.0/0 password
     $riak_admin security add-source user 0.0.0.0/0 password
 
-    $riak_admin security grant riak_kv.get,riak_kv.put,riak_kv.delete,riak_kv.index,riak_kv.list_keys,riak_kv.list_buckets,riak_kv.mapreduce,riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type,search.admin,search.query on any to all
+    $riak_admin security grant riak_kv.get,riak_kv.get_preflist,riak_kv.put,riak_kv.delete,riak_kv.index,riak_kv.list_keys,riak_kv.list_buckets,riak_kv.mapreduce,riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type,search.admin,search.query on any to all
 fi
 
