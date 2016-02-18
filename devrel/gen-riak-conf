@@ -7,31 +7,11 @@ declare -ir https_port="${4:-0}"
 declare -r security_cacert_file="$5"
 declare -r security_cert_file="$6"
 declare -r security_key_file="$7"
-declare -r default_backend="${8:-bitcask}"
-
-default_backend_name='bitcask_backend'
-if [[ $default_backend == 'leveldb' ]]
-then
-    default_backend_name='leveldb_backend'
-fi
 
 cat >> $out_file <<EOT
 ring_size = 16
 search = on
-storage_backend = multi
-multi_backend.default = $default_backend_name
-
-multi_backend.bitcask_backend.storage_backend = bitcask
-multi_backend.bitcask_backend.bitcask.data_root = \$(platform_data_dir)/bitcask
-multi_backend.bitcask_backend.bitcask.io_mode = erlang
-
-multi_backend.leveldb_backend.storage_backend = leveldb
-multi_backend.leveldb_backend.leveldb.data_root = \$(platform_data_dir)/leveldb
-multi_backend.leveldb_backend.leveldb.maximum_memory.percent = 30
-
-multi_backend.mem_backend.storage_backend = memory
-multi_backend.mem_backend.memory_backend.ttl = 10s
-multi_backend.mem_backend.memory_backend.max_memory_per_vnode = 4MB
+storage_backend = leveldb
 
 tls_protocols.sslv3 = off
 tls_protocols.tlsv1 = on
@@ -54,4 +34,3 @@ ssl.certfile = $security_cert_file
 ssl.keyfile = $security_key_file
 EOT
 fi
-
