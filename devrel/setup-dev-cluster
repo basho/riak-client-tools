@@ -26,7 +26,6 @@ declare -ir strong_consistency_node_count=4
 opt_strong_consistency='false'
 opt_legacy_search='false'
 opt_use_security='false'
-opt_default_backend='bitcask'
 opt_cleanup_only='false'
 declare -i opt_node_count=$default_node_count
 declare -i opt_delay_riak_ops=0
@@ -87,7 +86,6 @@ Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c] [-d <s
 -c      Set up cluster for Strong Consistency
         Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
 -s      Set up cluster to use Riak Security
--b      Default backend to use (Default: \"bitcask\", can be \"leveldb\")
 -x      Shut down any nodes and clean up directories.
 -d      Delay Riak operations (Default: $opt_delay_riak_ops seconds)
 "
@@ -106,8 +104,6 @@ while getopts "hslcxb:p:n:d:" opt; do
             opt_strong_consistency='true';;
         s)
             opt_use_security='true';;
-        b)
-            opt_default_backend="$OPTARG";;
         x)
             opt_cleanup_only='true';;
         d)
@@ -116,17 +112,6 @@ while getopts "hslcxb:p:n:d:" opt; do
             usage;;
     esac
 done
-
-default_backend='bitcask'
-case $opt_default_backend in
-    bitcask)
-        default_backend='bitcask';;
-    leveldb)
-        default_backend='leveldb';;
-    *)
-        pinfo '-b argument must either be bitcask or leveldb.'
-        usage;;
-esac
 
 if [[ $opt_use_security == 'true' ]]
 then
@@ -235,9 +220,9 @@ do
 
     if [[ $opt_use_security == 'true' ]]
     then
-        gen-riak-conf "$riak_conf" $http_port $pb_port $https_port "$security_cacert_file" "$security_cert_file" "$security_key_file" "$default_backend"
+        gen-riak-conf "$riak_conf" $http_port $pb_port $https_port "$security_cacert_file" "$security_cert_file" "$security_key_file"
     else
-        gen-riak-conf "$riak_conf" $http_port $pb_port 0 '' '' '' "$default_backend"
+        gen-riak-conf "$riak_conf" $http_port $pb_port 0 '' '' ''
     fi
 
     gen-adv-conf $adv_conf
