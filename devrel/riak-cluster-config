@@ -14,8 +14,6 @@ $riak_admin bucket-type create sets '{"props":{"datatype":"set"}}'
 $riak_admin bucket-type create counters '{"props":{"datatype":"counter"}}'
 $riak_admin bucket-type create other_counters '{"props":{"datatype":"counter","allow_mult":true}}'
 $riak_admin bucket-type create yokozuna '{"props":{}}'
-$riak_admin bucket-type create leveldb_type '{"props":{"backend":"leveldb_backend"}}'
-$riak_admin bucket-type create memory_type '{"props":{"backend":"mem_backend"}}'
 $riak_admin bucket-type create write_once '{"props":{"write_once":true}}'
 
 $riak_admin bucket-type activate plain
@@ -27,8 +25,6 @@ $riak_admin bucket-type activate sets
 $riak_admin bucket-type activate counters
 $riak_admin bucket-type activate other_counters
 $riak_admin bucket-type activate yokozuna
-$riak_admin bucket-type activate leveldb_type
-$riak_admin bucket-type activate memory_type
 $riak_admin bucket-type activate write_once
 
 if [[ $strong_consistency == 'true' ]]
