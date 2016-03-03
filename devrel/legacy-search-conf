@@ -7,6 +7,9 @@ sed -i -e "s/search = on/search = off/g" $riak_conf
 
 cat > $adv_conf <<'EOT'
 [
+    {riak_kv, [
+        {delete_mode, immediate}
+    ]},
     {riak_search, [
         {enabled, true}
     ]}
