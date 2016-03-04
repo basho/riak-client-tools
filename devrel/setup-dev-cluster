@@ -18,16 +18,13 @@ function get_realpath
 
 # Defaults
 declare -i i=0
-declare -r riak_admin=dev1/bin/riak-admin
+declare riak_admin='dev1/bin/riak-admin' # NB: will be set below
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
-declare -ir default_node_count=4
-declare -ir strong_consistency_node_count=4
 # Option vars
 opt_strong_consistency='false'
 opt_legacy_search='false'
 opt_use_security='false'
 opt_cleanup_only='false'
-declare -i opt_node_count=$default_node_count
 declare -i opt_delay_riak_ops=0
 
 script_dir="$(dirname $0)"
@@ -73,6 +70,16 @@ function wait_for_transfers
     fi
 }
 
+function maybe_sleep
+{
+    if (( opt_delay_riak_ops > 0 ))
+    then
+        pinfo_n "Sleeping $opt_delay_riak_ops seconds..."
+        sleep $opt_delay_riak_ops
+        echo 'done.'
+    fi
+}
+
 function usage
 {
     echo "
@@ -81,10 +88,8 @@ setup-dev-cluster: Quickly setup a dev Riak cluster.
 Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c] [-d <secs>]
 
 -p      Riak dev path (Default: \"$default_dev_cluster_path\")
--n      Node count (Default: $default_node_count)
 -l      Set up cluster to use Legacy Search instead of Yokozuna Search
--c      Set up cluster for Strong Consistency
-        Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
+-c      Set up cluster for Strong Consistency (NB: use at least 5 nodes)
 -s      Set up cluster to use Riak Security
 -x      Shut down any nodes and clean up directories.
 -d      Delay Riak operations (Default: $opt_delay_riak_ops seconds)
@@ -98,8 +103,6 @@ while getopts "hslcxb:p:n:d:" opt; do
             opt_legacy_search='true';;
         p)
             opt_dev_cluster_path="$OPTARG";;
-        n)
-            opt_node_count="$OPTARG";;
         c)
             opt_strong_consistency='true';;
         s)
@@ -131,23 +134,14 @@ fi
 
 declare -r dev_cluster_path="${opt_dev_cluster_path:-$default_dev_cluster_path}"
 
-if [[ $opt_strong_consistency == 'true' ]]
+if [[ ! -d $dev_cluster_path ]]
 then
-    declare -ir node_count=$strong_consistency_node_count
-    if (( opt_node_count > node_count ))
-    then
-        node_count=opt_node_count
-    fi
-else
-    declare -ir node_count="${opt_node_count:-$default_node_count}"
-fi
-
-if [[ -d $dev_cluster_path ]]
-then
-    pinfo "Setting up dev cluster in $dev_cluster_path with $node_count nodes"
-else
     errexit "Dev cluster path $dev_cluster_path does not exist!"
 fi
+
+pushd $dev_cluster_path > /dev/null
+
+pinfo "Setting up dev cluster in $dev_cluster_path"
 
 if [[ $opt_strong_consistency == 'true' ]]
 then
@@ -158,17 +152,6 @@ if [[ $opt_legacy_search == 'true' ]]
 then
     pinfo "Setting up dev cluster with Legacy Search"
 fi
-
-pushd $dev_cluster_path > /dev/null
-
-for ((i = 1; i <= node_count; ++i))
-do
-    dev_node_path="dev$i"
-    if [[ ! -d $dev_node_path ]]
-    then
-        errexit "Dev node directory $dev_node_path does not exist!"
-    fi
-done
 
 pinfo "Stopping Riak"
 
@@ -204,10 +187,8 @@ declare -i https_port=10418
 
 pinfo "Configuring riak.conf"
 
-for ((i = 1; i <= node_count; ++i))
+for devdir in dev*
 do
-    devdir="dev$i"
-
     adv_conf="$devdir/etc/advanced.config"
     riak_conf="$devdir/etc/riak.conf"
     riak_conf_orig="$devdir/etc/riak.conf.orig"
@@ -244,30 +225,29 @@ done
 
 pinfo "Starting Riak"
 
-function maybe_sleep
-{
-    if (( opt_delay_riak_ops > 0 ))
-    then
-        pinfo_n "Sleeping $opt_delay_riak_ops seconds..."
-        sleep $opt_delay_riak_ops
-        echo 'done.'
-    fi
-}
-
-for ((i = 1; i <= node_count; ++i))
+for devdir in dev*
 do
-    devdir="dev$i"
-    $devdir/bin/riak start
     pinfo "Starting $devdir"
+    $devdir/bin/riak start
     maybe_sleep
 done
 
-for ((i = 2; i <= node_count; ++i))
+is_first='true'
+first_node_name='dev1@127.0.0.1'
+for devdir in dev*
 do
-    devdir="dev$i"
-    $devdir/bin/riak-admin cluster join dev1@127.0.0.1
-    pinfo "Joining $devdir"
-    maybe_sleep
+    if [[ $is_first == 'true' ]]
+    then
+        pdebug "Skipping join for $devdir"
+        first_node_name="$devdir@127.0.0.1"
+        riak_admin="$devdir/bin/riak-admin"
+        is_first='false'
+    else
+        pinfo "Joining $devdir"
+        pdebug "$devdir/bin/riak-admin cluster join \"$first_node_name\""
+        $devdir/bin/riak-admin cluster join "$first_node_name"
+        maybe_sleep
+    fi
 done
 
 $riak_admin cluster plan
