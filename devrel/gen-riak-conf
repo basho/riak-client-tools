@@ -7,11 +7,22 @@ declare -ir https_port="${4:-0}"
 declare -r security_cacert_file="$5"
 declare -r security_cert_file="$6"
 declare -r security_key_file="$7"
+declare -ir node_count="$8"
+declare -r search="${9:on}"
+
+declare -i start_percent=90
+if [[ $search == 'on' ]]
+then
+    start_percent=60
+fi
+
+declare -ir leveldb_memory_percent="$((start_percent / node_count))"
 
 cat >> $out_file <<EOT
-ring_size = 16
-search = on
+ring_size = 64
+search = $search
 storage_backend = leveldb
+leveldb.maximum_memory.percent = $leveldb_memory_percent
 
 tls_protocols.sslv3 = off
 tls_protocols.tlsv1 = on
@@ -25,7 +36,8 @@ search.solr.start_timeout = 60s
 
 EOT
 
-if (( https_port > 0 ))
+if (( https_port > 0 )) && \
+   [[ -f $security_cacert_file && -f $security_cert_file && -f $security_key_file ]]
 then
     cat >> $out_file <<EOT
 listener.https.internal = 0.0.0.0:$https_port
