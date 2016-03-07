@@ -7,8 +7,8 @@ declare -ir https_port="${4:-0}"
 declare -r security_cacert_file="$5"
 declare -r security_cert_file="$6"
 declare -r security_key_file="$7"
-declare -ir node_count="$8"
-declare -r search="${9:on}"
+declare -ir node_count="${8:-1}"
+declare -r search="${9:-on}"
 
 declare -i start_percent=90
 if [[ $search == 'on' ]]
