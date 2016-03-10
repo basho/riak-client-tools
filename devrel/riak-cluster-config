@@ -65,3 +65,4 @@ then
     $riak_admin security grant riak_kv.ts_put on any to all
 fi
 
+exit 0
