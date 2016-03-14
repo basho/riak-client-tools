@@ -82,7 +82,6 @@ function transfers_in_progress
 
 function wait_for_transfers
 {
-    sleep 5
     local transfer_status="$(transfers_in_progress)"
     while [[ $transfer_status == 'in_progress' ]]
     do

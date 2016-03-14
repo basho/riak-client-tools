@@ -25,6 +25,13 @@ function get_scriptpath
     echo "$(cd -P $(dirname $bsrc) && pwd)"
 }
 
+function do_sleep
+{
+    local -ri s="$1"
+    echo "Sleeping for $s seconds..."
+    sleep $s
+}
+
 unset CDPATH
 declare -r script_path="$(get_scriptpath)"
 export PATH="$PATH:$script_path"
@@ -33,26 +40,41 @@ source "$script_path/common.bash"
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
 declare -ri default_monkey_count=1
 
+opt_use_signals='false'
+opt_wait_xfers='false'
+declare -i opt_sleep_interval=30
+
 function usage
 {
     echo "
 chaos-monkey: Monkey with your devrel
 
-Usage: chaos-monkey [-p <riak_dev_path>] [-m <monkey_count>]
+Usage: chaos-monkey
+    [-p <riak_dev_path>] [-m <monkey_count>] [-s <sleep_interval>] [-kw]
 
--p    Riak dev path (Default: \"$default_dev_cluster_path\")
 -m    Monkey count, i.e. number of nodes to take down at any given time
       (Default: \"$default_monkey_count\")
+-p    Riak dev path (Default: \"$default_dev_cluster_path\")
+-s    Sleep interval (Default: \"$opt_sleep_interval\")
+-k    Use SIGSTOP/SIGCONT signals in addition to
+      'riak stop' / 'riak start'
+-w    Just wait for transfers and exit
 "
     exit 0
 }
 
-while getopts "hp:m:" opt; do
+while getopts "hkwm:p:s:" opt; do
     case $opt in
-        p)
-            declare -r opt_dev_cluster_path="$OPTARG";;
+        k)
+            opt_use_signals='true';;
         m)
             declare -ri opt_monkey_count="$OPTARG";;
+        p)
+            declare -r opt_dev_cluster_path="$OPTARG";;
+        s)
+            opt_sleep_interval="$OPTARG";;
+        w)
+            opt_wait_xfers='true';;
         *)
             usage;;
     esac
@@ -74,9 +96,34 @@ then
     errexit "Maximum monkey count is $(( dev_node_count - 1 ))"
 fi
 
+function get_riak_pid
+{
+    local -r devn="$1"
+    local -r run_erl="$devn/log/run_erl.log"
+    if [[ -s $run_erl ]]
+    then
+        declare -ri pid=$(awk '/run_erl \[[[:digit:]]+\]/ { l=length($2)-2; print substr($2,2,l); exit }' "$devn/log/run_erl.log")
+        if (( pid > 0 ))
+        then
+            echo "$pid"
+        else
+            errexit "Could not get PID for $devn"
+        fi
+    else
+        errexit "Expected run_erl.log at $run_erl"
+    fi
+}
+
 declare -i i=0
+declare -i pid=0
 while (true)
 do
+    use_kill='false'
+    if [[ $opt_use_signals == 'true' ]] && (( i % 2 == 0 ))
+    then
+        use_kill='true'
+    fi
+
     declare -a nodes
     for (( i = 0; i < monkey_count; i++ ))
     do
@@ -87,11 +134,27 @@ do
             errexit "riak-admin not found in $riak_admin"
         fi
 
+        if [[ $opt_wait_xfers == 'true' ]]
+        then
+            pinfo 'waiting for transfers to finish, then exiting'
+            wait_for_transfers
+            exit 0
+        fi
+
         if $devn/bin/riak ping
         then
             pinfo "monkeying around with $devn in $dev_cluster_path"
-            echo Stopping $devn...
-            "$devn/bin/riak" stop
+
+            if [[ $use_kill == 'true' ]]
+            then
+                pid="$(get_riak_pid $devn)"
+                echo "Stopping $devn ($pid) via SIGSTOP..."
+                kill -STOP $pid
+            else
+                echo "Stopping $devn via 'riak stop'..."
+                "$devn/bin/riak" stop
+            fi
+
             nodes[$i]="$devn"
         else
             # Re-do
@@ -99,13 +162,19 @@ do
         fi
     done
 
-    echo Sleeping 10 seconds...
-    sleep 10
+    do_sleep $opt_sleep_interval
 
     for devn in ${nodes[@]}
     do
-        echo Starting $devn...
-        "$devn/bin/riak" start
+        if [[ $use_kill == 'true' ]]
+        then
+            pid="$(get_riak_pid $devn)"
+            echo "Starting $devn ($pid) via SIGCONT..."
+            kill -CONT $pid
+        else
+            echo "Starting $devn via 'riak start'..."
+            "$devn/bin/riak" start
+        fi
     done
     
     echo Setting transfer-limit 16...
@@ -113,6 +182,5 @@ do
 
     wait_for_transfers
 
-    echo Sleeping 30 seconds...
-    sleep 30
+    do_sleep $opt_sleep_interval
 done
