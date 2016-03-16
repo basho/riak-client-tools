@@ -39,6 +39,7 @@ source "$script_path/common.bash"
 
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
 declare -ri default_monkey_count=1
+declare -ri default_iteration_count=16
 
 opt_use_signals='false'
 opt_wait_xfers='false'
@@ -52,6 +53,7 @@ chaos-monkey: Monkey with your devrel
 Usage: chaos-monkey
     [-p <riak_dev_path>] [-m <monkey_count>] [-s <sleep_interval>] [-kw]
 
+-i    Iteration count (Default: \"$default_iteration_count\")
 -m    Monkey count, i.e. number of nodes to take down at any given time
       (Default: \"$default_monkey_count\")
 -p    Riak dev path (Default: \"$default_dev_cluster_path\")
@@ -63,12 +65,14 @@ Usage: chaos-monkey
     exit 0
 }
 
-while getopts "hkwm:p:s:" opt; do
+while getopts "hkwmi:p:s:" opt; do
     case $opt in
         k)
             opt_use_signals='true';;
         m)
             declare -ri opt_monkey_count="$OPTARG";;
+        i)
+            declare -ri opt_iteration_count="$OPTARG";;
         p)
             declare -r opt_dev_cluster_path="$OPTARG";;
         s)
@@ -82,6 +86,7 @@ done
 
 declare -r dev_cluster_path="${opt_dev_cluster_path:-$default_dev_cluster_path}"
 declare -ri monkey_count="${opt_monkey_count:-$default_monkey_count}"
+declare -ri iteration_count="${opt_iteration_count:-$default_iteration_count}"
 
 if [[ ! -d $dev_cluster_path ]]
 then
@@ -115,14 +120,16 @@ function get_riak_pid
 }
 
 declare -i i=0
+declare -i j=0
 declare -i pid=0
-while (true)
+while (( j < iteration_count ))
 do
     use_kill='false'
-    if [[ $opt_use_signals == 'true' ]] && (( i % 2 == 0 ))
+    if [[ $opt_use_signals == 'true' ]] && (( j % 2 == 0 ))
     then
         use_kill='true'
     fi
+    (( j = j + 1 ))
 
     declare -a nodes
     for (( i = 0; i < monkey_count; i++ ))
@@ -158,7 +165,7 @@ do
             nodes[$i]="$devn"
         else
             # Re-do
-            (( i-- ))
+            (( i = i - 1 ))
         fi
     done
 
