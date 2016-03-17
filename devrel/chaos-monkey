@@ -129,6 +129,13 @@ do
     then
         use_kill='true'
     fi
+
+    # NB: don't sleep the first interval
+    if (( j > 0 ))
+    then
+        do_sleep $opt_sleep_interval
+    fi
+
     (( j = j + 1 ))
 
     declare -a nodes
@@ -188,6 +195,4 @@ do
     "$devn/bin/riak-admin" transfer-limit 16
 
     wait_for_transfers
-
-    do_sleep $opt_sleep_interval
 done
