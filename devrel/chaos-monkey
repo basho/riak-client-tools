@@ -39,7 +39,7 @@ source "$script_path/common.bash"
 
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
 declare -ri default_monkey_count=1
-declare -ri default_iteration_count=16
+declare -ri default_iteration_count=1
 
 opt_use_signals='false'
 opt_wait_xfers='false'
@@ -65,14 +65,14 @@ Usage: chaos-monkey
     exit 0
 }
 
-while getopts "hkwmi:p:s:" opt; do
+while getopts "hkwi:m:p:s:" opt; do
     case $opt in
         k)
             opt_use_signals='true';;
-        m)
-            declare -ri opt_monkey_count="$OPTARG";;
         i)
             declare -ri opt_iteration_count="$OPTARG";;
+        m)
+            declare -ri opt_monkey_count="$OPTARG";;
         p)
             declare -r opt_dev_cluster_path="$OPTARG";;
         s)
