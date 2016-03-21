@@ -126,6 +126,7 @@ then
 fi
 
 pushd $dev_cluster_path > /dev/null
+declare -i dev_node_count=0
 get_dev_node_count
 
 pinfo "Setting up dev cluster in $dev_cluster_path"

@@ -94,6 +94,7 @@ then
 fi
 
 pushd $dev_cluster_path > /dev/null
+declare -i dev_node_count=0
 get_dev_node_count
 
 if (( monkey_count >= dev_node_count ))

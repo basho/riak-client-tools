@@ -101,7 +101,7 @@ function wait_for_transfers
 
 function get_dev_node_count
 {
-    declare -i dev_node_count="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
+    dev_node_count="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
     if (( dev_node_count == 0 ))
     then
         perr "No dev nodes found in $dev_cluster_path"
