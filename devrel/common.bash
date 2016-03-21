@@ -93,16 +93,19 @@ function wait_for_transfers
 
     if [[ $transfer_status == 'error' ]]
     then
-        errexit 'Transfers errored!'
+        perr 'Transfers errored!'
+        return 1
     fi
+    return 0
 }
 
 function get_dev_node_count
 {
-    local -ir dnc="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
-    if (( dnc == 0 ))
+    declare -i dev_node_count="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
+    if (( dev_node_count == 0 ))
     then
-        errexit "No dev nodes found in $dev_cluster_path"
+        perr "No dev nodes found in $dev_cluster_path"
+        return 1
     fi
-    echo "$dnc"
+    return 0
 }
