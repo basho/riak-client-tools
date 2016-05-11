@@ -5,160 +5,131 @@ set -o nounset
 
 # NB: can't put this in common.bash since finding
 # common.bash depends on it
-function get_realpath
+# http://www.ostricher.com/2014/10/the-right-way-to-get-the-directory-of-a-bash-script/
+function get_scriptpath
 {
-    local path="$1"
-    if hash realpath 2>/dev/null
-    then
-        realpath "$path"
-    else
-        perl -e 'use Cwd q(abs_path);print abs_path(shift)' "$path"
-    fi
+    local sdir='unset'
+    local target='unset'
+    local bsrc="${BASH_SOURCE[0]}"
+    while [[ -h $bsrc ]]
+    do
+        target="$(readlink $bsrc)"
+        if [[ $target == /* ]]
+        then
+            bsrc="$target"
+        else
+            sdir="$(dirname $bsrc)"
+            bsrc="$sdir/$target"
+        fi
+    done
+    echo "$(cd -P $(dirname $bsrc) && pwd)"
 }
 
-# Defaults
-declare -i i=0
-declare -r riak_admin=dev1/bin/riak-admin
-declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
-declare -ir default_node_count=4
-declare -ir strong_consistency_node_count=4
-# Option vars
-opt_strong_consistency='false'
-opt_legacy_search='false'
-opt_use_security='false'
-opt_default_backend='bitcask'
-opt_cleanup_only='false'
-declare -i opt_node_count=$default_node_count
-
-script_dir="$(dirname $0)"
-script_path="$(get_realpath $script_dir)"
+unset CDPATH
+declare -r script_path="$(get_scriptpath)"
 export PATH="$PATH:$script_path"
 source "$script_path/common.bash"
 
-function transfers_in_progress
+# Defaults
+declare -i i=0
+declare riak_admin='dev1/bin/riak-admin' # NB: will be set below
+declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
+# Option vars
+opt_strong_consistency='false'
+opt_search='on' # NB: yz search on / off
+opt_legacy_search='false'
+opt_use_security='false'
+opt_cleanup_only='false'
+declare -i opt_delay_riak_ops=0
+
+function maybe_sleep
 {
-    local retval='in_progress'
-    local transfers_out=$(make_temp_file riak-admin-transfers)
-
-    $riak_admin transfers > $transfers_out 2>&1
-    if grep -iqF 'Node is not running' $transfers_out
+    if (( opt_delay_riak_ops > 0 ))
     then
-        perr 'Riak transfers did not complete. Error!'
-        retval='error' # Return error
-    elif grep -iqF 'No transfers active' $transfers_out
-    then
-        retval='done' # No longer in progress
-    else
-        retval='in_progress' # Still in progress
-    fi
-    rm -f $transfers_out
-    echo $retval
-}
-
-function wait_for_transfers
-{
-    sleep 5
-    local transfer_status="$(transfers_in_progress)"
-    while [[ $transfer_status == 'in_progress' ]]
-    do
-        pinfo 'Transfers in progress.'
-        sleep 5
-        transfer_status=$(transfers_in_progress)
-    done
-    pinfo "Transfer status: $transfer_status"
-
-    if [[ $transfer_status == 'error' ]]
-    then
-        errexit 'Transfers errored!'
+        sleep $opt_delay_riak_ops
     fi
 }
 
 function usage
 {
-      echo "
+    echo "
 setup-dev-cluster: Quickly setup a dev Riak cluster.
 
-Usage: setup-dev-cluster [-p <riak dev path>] [-n <node count>] [-l] [-c]
+Usage:
+
+setup-dev-cluster [-p <riak dev path>] [-d <secs>] [-clsxz]
 
 -p      Riak dev path (Default: \"$default_dev_cluster_path\")
--n      Node count (Default: $default_node_count)
+-d      Delay Riak operations (Default: $opt_delay_riak_ops seconds)
+-c      Set up cluster for Strong Consistency (NB: use at least 5 nodes)
 -l      Set up cluster to use Legacy Search instead of Yokozuna Search
--c      Set up cluster for Strong Consistency
-        Note: overrides -n setting and requires at least $strong_consistency_node_count nodes
 -s      Set up cluster to use Riak Security
--b      Default backend to use (Default: \"bitcask\", can be \"leveldb\")
 -x      Shut down any nodes and clean up directories.
+-z      Set up cluster WITHOUT Yokozuna Search (Default: $opt_search)
 "
-      exit 0
+    exit 0
 }
 
-while getopts "hslcxb:p:n:" opt; do
+while getopts "hclsxzp:d:" opt; do
     case $opt in
-        l)
-            opt_legacy_search='true';;
         p)
             opt_dev_cluster_path="$OPTARG";;
-        n)
-            opt_node_count="$OPTARG";;
+        d)
+            opt_delay_riak_ops="$OPTARG";;
         c)
             opt_strong_consistency='true';;
+        l)
+            opt_legacy_search='true';;
         s)
             opt_use_security='true';;
-        b)
-            opt_default_backend="$OPTARG";;
         x)
             opt_cleanup_only='true';;
+        z)
+            opt_search='off';;
         *)
             usage;;
     esac
 done
 
-default_backend='bitcask'
-case $opt_default_backend in
-    bitcask)
-        default_backend='bitcask';;
-    leveldb)
-        default_backend='leveldb';;
-    *)
-        pinfo '-b argument must either be bitcask or leveldb.'
-        usage;;
-esac
-
+# NB: these are passed to scripts as args so they should be
+# zero-length strings unless set to a path
+security_cacert_file=''
+security_cert_file=''
+security_key_file=''
 if [[ $opt_use_security == 'true' ]]
 then
     pinfo 'NOTE: using Riak Security. This will require HTTPS and TLS connections.'
-    declare -r ca_path="$(get_realpath $script_path/../)";
-    security_cacert_file="$ca_path/test-ca/certs/cacert.pem"
-    security_cert_file="$ca_path/test-ca/certs/riak-test-cert.pem"
-    security_key_file="$ca_path/test-ca/private/riak-test-key.pem"
-    for file in $security_cacert_file $security_cert_file $security_key_file
-    do
-        if [[ ! -f $file  ]]
-        then
-            errexit "missing security file: $file"
-        fi
-    done
+    declare -r ca_path="$(cd -P "$script_path/../test-ca" && pwd)";
+    if [[ -d $ca_path ]]
+    then
+        security_cacert_file="$ca_path/certs/cacert.pem"
+        security_cert_file="$ca_path/certs/riak-test-cert.pem"
+        security_key_file="$ca_path/private/riak-test-key.pem"
+        for file in $security_cacert_file $security_cert_file $security_key_file
+        do
+            if [[ ! -f $file  ]]
+            then
+                errexit "missing security file: $file"
+            fi
+        done
+        pinfo "Using certificates in $ca_path"
+    else
+        errexit 'missing CA directory'
+    fi
 fi
 
 declare -r dev_cluster_path="${opt_dev_cluster_path:-$default_dev_cluster_path}"
 
-if [[ $opt_strong_consistency == 'true' ]]
+if [[ ! -d $dev_cluster_path ]]
 then
-    declare -ir node_count=$strong_consistency_node_count
-    if (( opt_node_count > node_count ))
-    then
-        node_count=opt_node_count
-    fi
-else
-    declare -ir node_count="${opt_node_count:-$default_node_count}"
-fi
-
-if [[ -d $dev_cluster_path ]]
-then
-    pinfo "Setting up dev cluster in $dev_cluster_path with $node_count nodes"
-else
     errexit "Dev cluster path $dev_cluster_path does not exist!"
 fi
+
+pushd $dev_cluster_path > /dev/null
+declare -i dev_node_count=0
+get_dev_node_count
+
+pinfo "Setting up dev cluster in $dev_cluster_path"
 
 if [[ $opt_strong_consistency == 'true' ]]
 then
@@ -170,24 +141,21 @@ then
     pinfo "Setting up dev cluster with Legacy Search"
 fi
 
-pushd $dev_cluster_path > /dev/null
-
-for ((i = 1; i <= node_count; ++i))
-do
-    dev_node_path="dev$i"
-    if [[ ! -d $dev_node_path ]]
-    then
-        errexit "Dev node directory $dev_node_path does not exist!"
-    fi
-done
+if [[ $opt_search == 'off' ]]
+then
+    pinfo "Setting up dev cluster WITHOUT Yokozuna Search"
+fi
 
 pinfo "Stopping Riak"
 
 set +o errexit
 for devdir in dev*
 do
-    $devdir/bin/riak stop > /dev/null
+    pinfo "Stopping $devdir"
+    $devdir/bin/riak stop > /dev/null &
 done
+
+wait
 
 pinfo "Removing old Riak data"
 
@@ -211,14 +179,18 @@ fi
 
 declare -i pb_port=8087
 declare -i http_port=8098
-declare -i https_port=10011
+
+if [[ $opt_use_security == 'true' ]]
+then
+    declare -i https_port=10011
+else
+    declare -i https_port=0
+fi
 
 pinfo "Configuring riak.conf"
 
-for ((i = 1; i <= node_count; ++i))
+for devdir in dev*
 do
-    devdir="dev$i"
-
     adv_conf="$devdir/etc/advanced.config"
     riak_conf="$devdir/etc/riak.conf"
     riak_conf_orig="$devdir/etc/riak.conf.orig"
@@ -229,12 +201,9 @@ do
         cp -f $riak_conf $riak_conf_orig
     fi
 
-    if [[ $opt_use_security == 'true' ]]
-    then
-        gen-riak-conf "$riak_conf" $http_port $pb_port $https_port "$security_cacert_file" "$security_cert_file" "$security_key_file" "$default_backend"
-    else
-        gen-riak-conf "$riak_conf" $http_port $pb_port 0 '' '' '' "$default_backend"
-    fi
+    gen-riak-conf "$riak_conf" $http_port $pb_port $https_port \
+        "$security_cacert_file" "$security_cert_file" "$security_key_file" \
+        "$dev_node_count" "$opt_search"
 
     gen-adv-conf $adv_conf
 
@@ -250,22 +219,43 @@ do
 
     (( pb_port += 10 ))
     (( http_port += 10 ))
-    (( https_port += 10 ))
+
+    if [[ $opt_use_security == 'true' ]]
+    then
+        (( https_port += 10 ))
+    else
+        https_port=0
+    fi
 done
 
 pinfo "Starting Riak"
 
-for ((i = 1; i <= node_count; ++i))
+for devdir in dev*
 do
-    devdir="dev$i"
-    $devdir/bin/riak start
+    pinfo "Starting $devdir"
+    ($devdir/bin/riak start; maybe_sleep) &
 done
 
-for ((i = 2; i <= node_count; ++i))
+wait
+
+is_first='true'
+first_node_name='dev1@127.0.0.1'
+for devdir in dev*
 do
-    devdir="dev$i"
-    $devdir/bin/riak-admin cluster join dev1@127.0.0.1
+    if [[ $is_first == 'true' ]]
+    then
+        pdebug "Skipping join for $devdir"
+        first_node_name="$devdir@127.0.0.1"
+        riak_admin="$devdir/bin/riak-admin"
+        is_first='false'
+    else
+        pinfo "Joining $devdir"
+        pdebug "$devdir/bin/riak-admin cluster join \"$first_node_name\""
+        ($devdir/bin/riak-admin cluster join "$first_node_name"; maybe_sleep) &
+    fi
 done
+
+wait
 
 $riak_admin cluster plan
 $riak_admin cluster commit

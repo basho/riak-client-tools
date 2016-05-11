@@ -7,31 +7,23 @@ declare -ir https_port="${4:-0}"
 declare -r security_cacert_file="$5"
 declare -r security_cert_file="$6"
 declare -r security_key_file="$7"
-declare -r default_backend="${8:-bitcask}"
+declare -ir node_count="${8:-1}"
+declare -r search="${9:-on}"
 
-default_backend_name='bitcask_backend'
-if [[ $default_backend == 'leveldb' ]]
+declare -i start_percent=90
+if [[ $search == 'on' ]]
 then
-    default_backend_name='leveldb_backend'
+    start_percent=60
 fi
 
+declare -ir leveldb_memory_percent="$((start_percent / node_count))"
+
 cat >> $out_file <<EOT
-ring_size = 16
-search = on
-storage_backend = multi
-multi_backend.default = $default_backend_name
-
-multi_backend.bitcask_backend.storage_backend = bitcask
-multi_backend.bitcask_backend.bitcask.data_root = \$(platform_data_dir)/bitcask
-multi_backend.bitcask_backend.bitcask.io_mode = erlang
-
-multi_backend.leveldb_backend.storage_backend = leveldb
-multi_backend.leveldb_backend.leveldb.data_root = \$(platform_data_dir)/leveldb
-multi_backend.leveldb_backend.leveldb.maximum_memory.percent = 30
-
-multi_backend.mem_backend.storage_backend = memory
-multi_backend.mem_backend.memory_backend.ttl = 10s
-multi_backend.mem_backend.memory_backend.max_memory_per_vnode = 4MB
+ring_size = 64
+search = $search
+storage_backend = leveldb
+leveldb.maximum_memory.percent = $leveldb_memory_percent
+anti_entropy = passive
 
 tls_protocols.sslv3 = off
 tls_protocols.tlsv1 = on
@@ -45,7 +37,8 @@ search.solr.start_timeout = 60s
 
 EOT
 
-if (( https_port > 0 ))
+if (( https_port > 0 )) && \
+   [[ -f $security_cacert_file && -f $security_cert_file && -f $security_key_file ]]
 then
     cat >> $out_file <<EOT
 listener.https.internal = 0.0.0.0:$https_port
@@ -54,4 +47,3 @@ ssl.certfile = $security_cert_file
 ssl.keyfile = $security_key_file
 EOT
 fi
-
