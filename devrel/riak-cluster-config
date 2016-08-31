@@ -67,9 +67,19 @@ then
     $riak_admin security add-user riak_trust_user password=riak_trust_user
     $riak_admin security add-source riak_trust_user 0.0.0.0/0 trust
 
-    $riak_admin security grant riak_kv.get,riak_kv.get_preflist,riak_kv.put,riak_kv.delete,riak_kv.index,riak_kv.list_keys,riak_kv.list_buckets,riak_kv.mapreduce,riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type,search.admin,search.query on any to all
+    $riak_admin security grant riak_kv.get,riak_kv.get_preflist,riak_kv.put,riak_kv.delete,riak_kv.index,riak_kv.list_keys,riak_kv.list_buckets,riak_kv.mapreduce on any to all
+    $riak_admin security grant riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type on any to all
+    $riak_admin security grant search.admin,search.query on any to all
 
-    $riak_admin security grant riak_kv.ts_put on any to all
+    $riak_admin security grant riak_ts.get on any to all
+    $riak_admin security grant riak_ts.put on any to all
+    $riak_admin security grant riak_ts.delete on any to all
+    $riak_admin security grant riak_ts.list_keys on any to all
+    $riak_admin security grant riak_ts.coverage on any to all
+    $riak_admin security grant riak_ts.create_table on any to all
+    $riak_admin security grant riak_ts.query_select on any to all
+    $riak_admin security grant riak_ts.describe_table on any to all
+    $riak_admin security grant riak_ts.show_tables on any to all
 fi
 
 exit 0
