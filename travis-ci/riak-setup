@@ -35,3 +35,6 @@ sudo riak-admin bucket-type activate phptest_sets
 sudo riak-admin bucket-type activate phptest_search
 sudo riak-admin bucket-type activate phptest_leveldb
 sudo riak-admin bucket-type activate hlls
+
+# NB: must exit 0 so we don't use the last exit val
+exit 0
