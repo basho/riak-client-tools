@@ -17,7 +17,14 @@ then
     exit 1
 fi
 
-echo 'search = on' >> $riak_conf
+# TODO - no copypasta with devrel/gen-riak-conf
+cat >> $riak_conf <<EOT
+ring_size = 64
+search = on
+storage_backend = leveldb
+anti_entropy = passive
+search.solr.start_timeout = 60s
+EOT
 
 riak start
 riak-admin wait-for-service riak_kv
