@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+declare -i uid="$(id -u)"
+if [[ $uid != 0 ]]
+then
+    echo 'Must be run by root user!' 1>&2
+    exit 1
+fi
+
+curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | bash
+apt-get install riak
+riak start
+riak-admin wait-for-service riak_kv
+
+# NB: must exit 0 so we don't use the last exit val
+exit 0
