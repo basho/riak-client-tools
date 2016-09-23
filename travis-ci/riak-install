@@ -9,6 +9,16 @@ fi
 
 curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | bash
 apt-get install riak
+
+declare -r riak_conf=/etc/riak/riak.conf
+if [[ ! -f $riak_conf ]]
+then
+    echo "Could not find $riak_conf file!" 1>&2
+    exit 1
+fi
+
+echo 'search = on' >> $riak_conf
+
 riak start
 riak-admin wait-for-service riak_kv
 riak-admin wait-for-service riak_pipe
