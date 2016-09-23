@@ -11,6 +11,8 @@ curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | 
 apt-get install riak
 riak start
 riak-admin wait-for-service riak_kv
+riak-admin wait-for-service riak_pipe
+riak-admin wait-for-service yokozuna
 
 # NB: must exit 0 so we don't use the last exit val
 exit 0
