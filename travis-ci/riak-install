@@ -7,29 +7,58 @@ then
     exit 1
 fi
 
-curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | bash
-apt-get install riak
+opt_passed='false'
+opt_install_riak='false'
+opt_start_riak='false'
 
-declare -r riak_conf=/etc/riak/riak.conf
-if [[ ! -f $riak_conf ]]
+while getopts "is" opt; do
+    opt_passed='true'
+    case $opt in
+        i)
+            opt_install_riak='true';;
+        s)
+            opt_start_riak='true';;
+    esac
+done
+
+if [[ $opt_passed == 'true' ]]
 then
-    echo "Could not find $riak_conf file!" 1>&2
-    exit 1
+    declare -r install_riak="$opt_install_riak"
+    declare -r start_riak="$opt_start_riak"
+else
+    declare -r install_riak='true'
+    declare -r start_riak='true'
 fi
 
-# TODO - no copypasta with devrel/gen-riak-conf
-cat >> $riak_conf <<EOT
+if [[ $install_riak == 'true' ]]
+then
+    curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | bash
+    apt-get install riak
+
+    declare -r riak_conf=/etc/riak/riak.conf
+    if [[ ! -f $riak_conf ]]
+    then
+        echo "Could not find $riak_conf file!" 1>&2
+        exit 1
+    fi
+
+    # TODO - no copypasta with devrel/gen-riak-conf
+    cat >> $riak_conf <<EOT
 ring_size = 64
 search = on
 storage_backend = leveldb
 anti_entropy = passive
 search.solr.start_timeout = 60s
 EOT
+fi
 
-riak start
-riak-admin wait-for-service riak_kv
-riak-admin wait-for-service riak_pipe
-riak-admin wait-for-service yokozuna
+if [[ $start_riak == 'true' ]]
+then
+    riak start
+    riak-admin wait-for-service riak_kv
+    riak-admin wait-for-service riak_pipe
+    riak-admin wait-for-service yokozuna
+fi
 
 # NB: must exit 0 so we don't use the last exit val
 exit 0
