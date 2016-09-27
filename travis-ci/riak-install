@@ -10,13 +10,17 @@ fi
 opt_passed='false'
 opt_install_riak='false'
 opt_start_riak='false'
+opt_download_url='unset'
 
-while getopts "is" opt; do
-    opt_passed='true'
+while getopts "isd:" opt; do
     case $opt in
+        d)
+            opt_download_url="$OPTARG";;
         i)
+            opt_passed='true'
             opt_install_riak='true';;
         s)
+            opt_passed='true'
             opt_start_riak='true';;
     esac
 done
@@ -30,10 +34,28 @@ else
     declare -r start_riak='true'
 fi
 
+if [[ $opt_download_url == 'unset' ]]
+then
+    declare -r download_url='https://packagecloud.io/install/repositories/basho/riak/script.deb.sh'
+else
+    declare -r download_url="$opt_download_url"
+    declare -r dpkg_name="${download_url##*/}"
+fi
+
 if [[ $install_riak == 'true' ]]
 then
-    curl -s https://packagecloud.io/install/repositories/basho/riak/script.deb.sh | bash
-    apt-get install riak
+    if [[ $download_url == *.deb.sh ]]
+    then
+        curl -s "$download_url" | bash
+        apt-get install riak
+    elif [[ $download_url == *.deb ]]
+    then
+        curl -O "$download_url"
+        dpkg -i "$dpkg_name"
+    else
+        echo "Don't know how to install from $download_url, exiting!" 1>&2
+        exit 1
+    fi
 
     declare -r riak_conf=/etc/riak/riak.conf
     if [[ ! -f $riak_conf ]]
