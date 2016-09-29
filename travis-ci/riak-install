@@ -38,12 +38,22 @@ if [[ $opt_download_url == 'unset' ]]
 then
     declare -r download_url='https://packagecloud.io/install/repositories/basho/riak/script.deb.sh'
 else
-    declare -r download_url="$opt_download_url"
+    declare download_url="$opt_download_url"
     declare -r dpkg_name="${download_url##*/}"
 fi
 
 if [[ $install_riak == 'true' ]]
 then
+    if [[ $download_url == 'rc' ]]
+        if [[ -n $RIAK_RC_DOWNLOAD_URL ]]
+        then
+            download_url="$RIAK_RC_DOWNLOAD_URL"
+        else
+            echo "Travis CI build configured to look for RC build, but RIAK_RC_DOWNLOAD_URL env var is not set." 1>&2
+            exit 1
+        fi
+    fi
+
     if [[ $download_url == *.deb.sh ]]
     then
         curl -s "$download_url" | bash
