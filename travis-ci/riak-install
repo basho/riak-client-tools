@@ -45,6 +45,7 @@ fi
 if [[ $install_riak == 'true' ]]
 then
     if [[ $download_url == 'rc' ]]
+    then
         if [[ -n $RIAK_RC_DOWNLOAD_URL ]]
         then
             download_url="$RIAK_RC_DOWNLOAD_URL"
