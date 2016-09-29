@@ -39,7 +39,6 @@ then
     declare -r download_url='https://packagecloud.io/install/repositories/basho/riak/script.deb.sh'
 else
     declare download_url="$opt_download_url"
-    declare -r dpkg_name="${download_url##*/}"
 fi
 
 if [[ $install_riak == 'true' ]]
@@ -62,6 +61,7 @@ then
     elif [[ $download_url == *.deb ]]
     then
         curl -O "$download_url"
+        declare -r dpkg_name="${download_url##*/}"
         dpkg -i "$dpkg_name"
     else
         echo "Don't know how to install from $download_url, exiting!" 1>&2
