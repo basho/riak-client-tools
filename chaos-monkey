@@ -35,7 +35,7 @@ function do_sleep
 unset CDPATH
 declare -r script_path="$(get_scriptpath)"
 export PATH="$PATH:$script_path"
-source "$script_path/common.bash"
+source "$script_path/lib/common.bash"
 
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"
 declare -ri default_monkey_count=1
@@ -94,12 +94,12 @@ then
 fi
 
 pushd $dev_cluster_path > /dev/null
-declare -i dev_node_count=0
-get_dev_node_count
+declare -i node_count=0
+get_node_count
 
-if (( monkey_count >= dev_node_count ))
+if (( monkey_count >= node_count ))
 then
-    errexit "Maximum monkey count is $(( dev_node_count - 1 ))"
+    errexit "Maximum monkey count is $(( node_count - 1 ))"
 fi
 
 function get_riak_pid
@@ -142,7 +142,7 @@ do
     declare -a nodes
     for (( i = 0; i < monkey_count; i++ ))
     do
-        devn="dev$(((RANDOM % dev_node_count) + 1))"
+        devn="dev$(((RANDOM % node_count) + 1))"
         riak_admin="$devn/bin/riak-admin"
         if [[ ! -x $riak_admin ]]
         then

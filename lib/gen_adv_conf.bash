@@ -1,8 +1,7 @@
-#!/bin/sh
-
-out_file=$1
-
-cat > $out_file <<'EOT'
+function gen_adv_conf
+{
+    local out_file="$1"
+    cat > $out_file <<'EOT'
 [
     {riak_kv, [
         {delete_mode, immediate},
@@ -14,3 +13,5 @@ cat > $out_file <<'EOT'
 ].
 EOT
 
+    return 0
+}
