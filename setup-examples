@@ -30,7 +30,6 @@ declare -r script_path="$(get_scriptpath)"
 export PATH="$PATH:$script_path"
 source "$script_path/common.bash"
 
-
 # Defaults
 declare -r riak_admin=dev1/bin/riak-admin
 declare -r default_dev_cluster_path="$HOME/Projects/basho/riak/dev"

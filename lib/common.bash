@@ -54,8 +54,11 @@ function errexit
 
 function onexit
 {
-    echo Exiting!
-    (( ${#DIRSTACK[*]} > 1 )) && popd
+    if (( ${#DIRSTACK[*]} > 1 ))
+    then
+        popd >/dev/null 2>&1
+    fi
+    return 0
 }
 
 trap onexit EXIT
@@ -99,13 +102,43 @@ function wait_for_transfers
     return 0
 }
 
-function get_dev_node_count
+declare -i node_count=0
+
+function get_node_count
 {
-    dev_node_count="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
-    if (( dev_node_count == 0 ))
+    # NB: this means it's a "rel" build
+    if [[ -d ./riak ]]
     then
-        perr "No dev nodes found in $dev_cluster_path"
+        node_count=1
+        # NB: very important, used later to iterate over
+        # directories to configure. There is only one such
+        # dir in a 'rel' build
+        riak_dir_glob='riak'
+    else
+        node_count="$(ls -1 . | grep '^dev[0-9]\+$' | wc -l)"
+        # NB: very important, used later to iterate over
+        # directories to configure. There may be several
+        # dirs in a 'devrel'
+        riak_dir_glob='dev*'
+    fi
+
+    if (( node_count == 0 ))
+    then
+        perr "No Riak rel or devrel directories found in $cluster_path"
         return 1
     fi
+
+    return 0
+}
+
+declare -i delay_riak_ops=0
+
+function maybe_sleep
+{
+    if (( delay_riak_ops > 0 ))
+    then
+        sleep $delay_riak_ops
+    fi
+
     return 0
 }
