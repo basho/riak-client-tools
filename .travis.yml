@@ -1,0 +1,13 @@
+sudo: required
+dist: trusty
+language: java
+env:
+  - RIAK_DOWNLOAD_URL=http://s3.amazonaws.com/downloads.basho.com/riak/2.0/2.0.7/ubuntu/trusty/riak_2.0.7-1_amd64.deb
+  - RIAK_DOWNLOAD_URL=http://s3.amazonaws.com/downloads.basho.com/riak/2.1/2.1.4/ubuntu/trusty/riak_2.1.4-1_amd64.deb
+script:
+  - sudo ./travis-ci/riak-install -d "$RIAK_DOWNLOAD_URL"
+  - sudo ./setup-riak
+  - curl -4vvv localhost:8098/stats
+notifications:
+  slack:
+    secure: G2MNdVq1TLLa2LrRZ9r0Wzp9/fs6P0n2KJ21kATrOgK0MXm2bcYeFnkztc8T8cbBlQf9JVTFKNgmEleKTXGYvGcMPnMJ5J3xlXyfz0AMnU+bn55gaLr7qBGZHfMyr3ZcQN6iFzJdNVxbrmNbfUlQA5rg/6bDdJcYZ3enHjmXWZo=
