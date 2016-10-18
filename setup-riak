@@ -82,6 +82,27 @@ function commit_cluster
     wait_for_transfers
 }
 
+function wait_for_services
+{
+    local node_name="$1"
+    local riak="$2"
+    local riak_admin="$3"
+    local opt_search="$4"
+
+    pinfo "Waiting for Riak services to start on $node_name"
+
+    sleep 5
+
+    $riak ping
+
+    $riak_admin wait-for-service riak_kv
+    $riak_admin wait-for-service riak_pipe
+    if [[ $opt_search == 'on' ]]
+    then
+        $riak_admin wait-for-service yokozuna
+    fi
+}
+
 function setup_cluster
 {
     pushd $cluster_path > /dev/null
@@ -196,17 +217,20 @@ function setup_cluster
         then
             pdebug "Skipping join for $dir"
             first_node_name="$dir@127.0.0.1"
+            local -r riak="$dir/bin/riak"
             local -r riak_admin="$dir/bin/riak-admin"
+            local -r riak_logs="$dir/log"
             is_first='false'
 
             # NB: wait for services to come up prior to join
-            pinfo "Waiting for Riak services to start on $first_node_name"
-            $riak_admin wait-for-service riak_kv
-            $riak_admin wait-for-service riak_pipe
-            if [[ $opt_search == 'on' ]]
+            set +o errexit
+            wait_for_services "$first_node_name" "$riak" "$riak_admin" "$opt_search"
+            if [[ $? != 0 ]]
             then
-                $riak_admin wait-for-service yokozuna
+                cat $riak_logs/*
+                return 1
             fi
+            set -o errexit
         else
             pinfo "Joining $dir"
             pdebug "$dir/bin/riak-admin cluster join \"$first_node_name\""
@@ -303,11 +327,30 @@ function setup_riak
 
     pinfo 'Starting Riak'
 
+    set +o errexit
     riak start
+    if [[ $? != 0 ]]
+    then
+        cat $platform_log_dir/*
+        return 1
+    fi
+    set -o errexit
 
+    local -r riak="$(which riak)"
     local -r riak_admin="$(which riak-admin)"
+
+    set +o errexit
+    wait_for_services "riak@127.0.0.1" "$riak" "$riak_admin" "$opt_search"
+    if [[ $? != 0 ]]
+    then
+        cat $platform_log_dir/*
+        return 1
+    fi
+    set -o errexit
+
     commit_cluster "$riak_admin"
     riak_cluster_config "$riak_admin" "$http_port" "$opt_strong_consistency" "$opt_use_security"
+
     return 0
 }
 

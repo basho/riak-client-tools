@@ -85,12 +85,20 @@ function transfers_in_progress
 
 function wait_for_transfers
 {
+    local -i start_secs="$(date '+%s')"
+    local -i now_secs="$start_secs"
     local transfer_status="$(transfers_in_progress)"
     while [[ $transfer_status == 'in_progress' ]]
     do
         pinfo 'Transfers in progress.'
         sleep 5
         transfer_status="$(transfers_in_progress)"
+        now_secs="$(date '+%s')"
+        if (( now_secs - start_secs > 120 ))
+        then
+            perr 'Transfers did not finish within 2 minutes'
+            return 1
+        fi
     done
     pinfo "Transfer status: $transfer_status"
 
