@@ -154,11 +154,14 @@ then
     exit 0
 fi
 
-if [[ -z $RELEASE_GPG_NAME ]]
+set +o nounset
+release_gpg_name="${RELEASE_GPG_NAME:-$2}"
+if [[ -z $release_gpg_name ]]
 then
-    errexit '$RELEASE_GPG_NAME must be set'
+    errexit '$RELEASE_GPG_NAME must be set, or key name passed as second arg'
 fi
+set -o nounset
 
-git tag --sign -a "$version_string" -m "riak-client-tools $version_string" --local-user "$RELEASE_GPG_NAME"
+git tag --sign -a "$version_string" -m "riak-client-tools $version_string" --local-user "$release_gpg_name"
 git push --tags
 gh_publish
