@@ -65,7 +65,8 @@ function onexit
     fi
 }
 
-function gh_publish {
+function gh_publish
+{
     if [[ -z $version_string ]]
     then
         errexit 'gh_publish: version_string required'
@@ -164,4 +165,5 @@ set -o nounset
 
 git tag --sign -a "$version_string" -m "riak-client-tools $version_string" --local-user "$release_gpg_name"
 git push --tags
+sleep 5
 gh_publish
