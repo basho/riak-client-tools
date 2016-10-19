@@ -55,6 +55,9 @@ function riak_cluster_config
 
     if [[ $use_security == 'true' ]]
     then
+        # NB: don't exit on error due to 2.0.7
+        # TODO: set -o errexit when all Riak versions >= 2.1.4
+        set +o errexit
         $riak_admin security enable
         $riak_admin security add-group test
 
@@ -78,7 +81,6 @@ function riak_cluster_config
         $riak_admin security grant riak_core.get_bucket,riak_core.set_bucket,riak_core.get_bucket_type,riak_core.set_bucket_type on any to all
         $riak_admin security grant search.admin,search.query on any to all
 
-        set +o errexit
         $riak_admin security grant riak_ts.get on any to all
         $riak_admin security grant riak_ts.put on any to all
         $riak_admin security grant riak_ts.delete on any to all

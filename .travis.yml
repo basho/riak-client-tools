@@ -6,7 +6,8 @@ env:
   - RIAK_DOWNLOAD_URL=http://s3.amazonaws.com/downloads.basho.com/riak/2.1/2.1.4/ubuntu/trusty/riak_2.1.4-1_amd64.deb
 script:
   - sudo ./travis-ci/riak-install -d "$RIAK_DOWNLOAD_URL"
-  - sudo ./setup-riak
+  - sudo ./setup-riak -s
+  - sudo riak-admin security disable
   - curl -4vvv localhost:8098/stats
 notifications:
   slack:
