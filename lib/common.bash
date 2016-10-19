@@ -3,9 +3,19 @@ set -o nounset
 
 declare -r debug='false'
 
+function make_temp_dir
+{
+    local template="${1:-tmp-$$}"
+    if [[ $template != *XXXXXX ]]
+    then
+        template="$template.XXXXXX"
+    fi
+    mktemp -d -t "$template"
+}
+
 function make_temp_file
 {
-    local template="$1"
+    local template="${1:-tmp-$$}"
     if [[ $template != *XXXXXX ]]
     then
         template="$template.XXXXXX"

@@ -160,7 +160,6 @@ function setup_cluster
         local -i https_port=0
     fi
 
-
     local adv_conf=''
     local riak_conf=''
     local riak_conf_orig=''
@@ -465,6 +464,7 @@ then
         security_cacert_file="$ca_path/certs/cacert.pem"
         security_cert_file="$ca_path/certs/riak-test-cert.pem"
         security_key_file="$ca_path/private/riak-test-key.pem"
+
         for file in $security_cacert_file $security_cert_file $security_key_file
         do
             if [[ ! -f $file  ]]
@@ -472,7 +472,21 @@ then
                 errexit "missing security file: $file"
             fi
         done
-        pinfo "Using certificates in $ca_path"
+
+        declare -r tmp_ca_path="$(make_temp_dir)"
+
+        cp -f "$security_cacert_file" "$tmp_ca_path"
+        security_cacert_file="$tmp_ca_path/cacert.pem"
+
+        cp -f "$security_cert_file" "$tmp_ca_path"
+        security_cert_file="$tmp_ca_path/riak-test-cert.pem"
+
+        cp -f "$security_key_file" "$tmp_ca_path"
+        security_key_file="$tmp_ca_path/riak-test-key.pem"
+
+        chmod 755 "$tmp_ca_path"
+        chmod 644 "$tmp_ca_path"/*
+        pinfo "Using certificates in $tmp_ca_path"
     else
         errexit 'missing CA directory'
     fi
