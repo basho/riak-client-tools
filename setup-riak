@@ -91,7 +91,7 @@ function wait_for_services
 
     pinfo "Waiting for Riak services to start on $node_name"
 
-    sleep 5
+    maybe_sleep
 
     $riak ping
 

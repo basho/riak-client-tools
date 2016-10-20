@@ -2,6 +2,7 @@ set -o errexit
 set -o nounset
 
 declare -r debug='false'
+declare -ir _default_transfer_timeout=300
 
 function make_temp_dir
 {
@@ -95,6 +96,7 @@ function transfers_in_progress
 
 function wait_for_transfers
 {
+    local -i transfer_timeout="${1:-$_default_transfer_timeout}"
     local -i start_secs="$(date '+%s')"
     local -i now_secs="$start_secs"
     local transfer_status="$(transfers_in_progress)"
@@ -104,9 +106,9 @@ function wait_for_transfers
         sleep 5
         transfer_status="$(transfers_in_progress)"
         now_secs="$(date '+%s')"
-        if (( now_secs - start_secs > 120 ))
+        if (( now_secs - start_secs > transfer_timeout ))
         then
-            perr 'Transfers did not finish within 2 minutes'
+            perr "Transfers did not finish within $transfer_timeout seconds"
             return 1
         fi
     done
