@@ -156,6 +156,12 @@ trap onexit EXIT
 
 declare -r version_string="${1:-unknown}"
 
+declare -r client_default_branch="${2:-''}"
+if [[ -z $client_default_branch ]]
+then
+    errexit 'second argument must be default git branch ("master")'
+fi
+
 if [[ ! $version_string =~ ^[0-9].[0-9].[0-9](-[a-z]+[0-9]+)?$ ]]
 then
     errexit 'first argument must be valid version string in X.Y.Z format'
@@ -170,17 +176,16 @@ else
     pinfo "publishing version $version_string"
 fi
 
-declare -r current_branch="$(git rev-parse --abbrev-ref HEAD)"
-
-if [[ $debug == 'false' && $is_prerelease == 'false' && $current_branch != $client_default_branch ]]
-then
-    errexit "publish must be run on $client_default_branch branch"
-fi
-
 declare -r github_api_key_file="$HOME/.ghapi"
 if [[ ! -s $github_api_key_file ]]
 then
     errexit "please save your GitHub API token in $github_api_key_file"
+fi
+
+declare -r current_branch="$(git rev-parse --abbrev-ref HEAD)"
+if [[ $debug == 'false' && $is_prerelease == 'false' && $current_branch != $client_default_branch ]]
+then
+    errexit "publish must be run on $client_default_branch branch"
 fi
 
 # Validate commands
@@ -189,28 +194,22 @@ then
     errexit "'curl' must be in your PATH"
 fi
 
-validate=${2:-''}
+validate=${3:-''}
 if [[ $validate == 'validate' ]]
 then
     exit 0
 fi
 
-declare -r client_name="${2:-''}"
+declare -r client_name="${3:-''}"
 if [[ -z $client_name ]]
 then
-    errexit 'second argument must be client name ("Riak Java Client")'
+    errexit 'third argument must be client name ("Riak Java Client")'
 fi
 
-declare -r client_slug="${3:-''}"
+declare -r client_slug="${4:-''}"
 if [[ -z $client_slug ]]
 then
-    errexit 'third argument must be client slug ("riak-java-client")'
-fi
-
-declare -r client_default_branch="${4:-''}"
-if [[ -z $client_default_branch ]]
-then
-    errexit 'fourth argument must be client default branch ("master")'
+    errexit 'fourth argument must be client slug ("riak-java-client")'
 fi
 
 declare -r client_package_file="${5:-''}"
