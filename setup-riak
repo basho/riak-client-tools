@@ -59,6 +59,7 @@ opt_ports=''
 opt_riak_conf=''
 opt_search='on' # NB: yz search on / off
 opt_strong_consistency='false'
+opt_setup_only='false'
 opt_use_security='false'
 
 function pinfo_options
@@ -240,7 +241,10 @@ function setup_cluster
     wait
 
     commit_cluster "$riak_admin"
-    riak_cluster_config "$riak_admin" "$starting_http_port" "$opt_strong_consistency" "$opt_use_security"
+    if [[ $opt_setup_only == 'false' ]]
+    then
+        riak_cluster_config "$riak_admin" "$starting_http_port" "$opt_strong_consistency" "$opt_use_security"
+    fi
     return 0
 }
 
@@ -348,8 +352,10 @@ function setup_riak
     set -o errexit
 
     commit_cluster "$riak_admin"
-    riak_cluster_config "$riak_admin" "$http_port" "$opt_strong_consistency" "$opt_use_security"
-
+    if [[ $opt_setup_only == 'false' ]]
+    then
+        riak_cluster_config "$riak_admin" "$http_port" "$opt_strong_consistency" "$opt_use_security"
+    fi
     return 0
 }
 
@@ -362,7 +368,7 @@ Usage:
 
 setup-riak [-p <riak rel or devrel path>]
            [-f <riak.conf from installed pkg>]
-           [-l PB:HTTP] [-d <secs>] [-clsxz]
+           [-l PB:HTTP] [-d <secs>] [-closxz]
 
 -p  Riak devrel or rel path (Default: \"$default_cluster_path\")
 -f  riak.conf from package (Default: \"$default_riak_conf\")
@@ -371,6 +377,7 @@ setup-riak [-p <riak rel or devrel path>]
 -s  Set up cluster to use Riak Security
 -x  Shut down any nodes and clean up directories.
 -z  Set up cluster WITHOUT Yokozuna Search (Default: $opt_search)
+-o  Only start cluster, do not configure bucket types
 
 -l  PB:HTTP Use PB as PB port (Default: $default_pb_port),
             HTTP as HTTP port (Default: $default_http_port)
@@ -378,7 +385,7 @@ setup-riak [-p <riak rel or devrel path>]
     exit 0
 }
 
-while getopts "hcsxzp:f:d:l:" opt; do
+while getopts "hcosxzp:f:d:l:" opt; do
     case $opt in
         p)
             opt_cluster_path="$OPTARG";;
@@ -390,6 +397,8 @@ while getopts "hcsxzp:f:d:l:" opt; do
             opt_ports="$OPTARG";;
         c)
             opt_strong_consistency='true';;
+        o)
+            opt_setup_only='true';;
         s)
             opt_use_security='true';;
         x)
