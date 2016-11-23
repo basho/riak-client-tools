@@ -4,6 +4,7 @@ function gen_adv_conf
     cat > $out_file <<'EOT'
 [
     {riak_kv, [
+        {allow_strfun, true},
         {delete_mode, immediate},
         {test, true}
     ]},
