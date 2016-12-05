@@ -83,6 +83,36 @@ function commit_cluster
     wait_for_transfers
 }
 
+function wait_for_service
+{
+    local svc="$1"
+    local svc_out="$($riak_admin services 2>&1)"
+    local -i i=0
+
+    while [[ $svc_out != *$svc* ]]
+    do
+        if [[ $svc_out == *not\ responding* ]]
+        then
+            perr 'Riak did not start! (not responding)'
+            return 1
+        fi
+
+        sleep 5
+        if (( i > 24 ))
+        then
+            perr 'Riak did not start in time!'
+            return 1
+        else
+            pinfo "($i) waiting for service: $svc"
+            (( i = i + 1 ))
+        fi
+
+        svc_out="$($riak_admin services 2>&1)"
+    done
+
+    return 0
+}
+
 function wait_for_services
 {
     local node_name="$1"
@@ -94,13 +124,20 @@ function wait_for_services
 
     maybe_sleep
 
-    $riak ping
+    for svc in 'riak_kv' 'riak_pipe'
+    do
+        if ! wait_for_service "$svc"
+        then
+            return 1
+        fi
+    done
 
-    $riak_admin wait-for-service riak_kv
-    $riak_admin wait-for-service riak_pipe
     if [[ $opt_search == 'on' ]]
     then
-        $riak_admin wait-for-service yokozuna
+        if ! wait_for_service 'yokozuna'
+        then
+            return 1
+        fi
     fi
 }
 
@@ -227,7 +264,7 @@ function setup_cluster
             wait_for_services "$first_node_name" "$riak" "$riak_admin" "$opt_search"
             if [[ $? != 0 ]]
             then
-                cat $riak_logs/*
+                cat $riak_logs/*.log*
                 return 1
             fi
             set -o errexit
@@ -334,7 +371,7 @@ function setup_riak
     riak start
     if [[ $? != 0 ]]
     then
-        cat $platform_log_dir/*
+        cat $platform_log_dir/*.log*
         return 1
     fi
     set -o errexit
