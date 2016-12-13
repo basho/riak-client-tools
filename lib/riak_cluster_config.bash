@@ -20,7 +20,8 @@ function riak_cluster_config
     $riak_admin bucket-type create gsets '{"props":{"datatype":"gset"}}'
     $riak_admin bucket-type create write_once '{"props":{"write_once":true}}'
     $riak_admin bucket-type create GeoCheckin '{"props": {"n_val": 3, "table_def": "CREATE TABLE GeoCheckin (geohash varchar not null, user varchar not null, time timestamp not null, weather varchar not null, temperature double, PRIMARY KEY((geohash, user, quantum(time, 15, m)), geohash, user, time))"}}'
-    $riak_admin bucket-type create GeoCheckin_Wide '{"props": {"n_val": 3, "table_def": "CREATE TABLE GeoCheckin_Wide (geohash varchar not null, user varchar not null, time timestamp not null, weather varchar not null, temperature double, uv_index sint64, observed boolean not null, sensor_data blob, PRIMARY KEY((geohash, user, quantum(time, 15, 'm')), geohash, user, time))"}}'
+    $riak_admin bucket-type create GeoCheckin_Wide '{"props": {"n_val": 3, "table_def": "CREATE TABLE GeoCheckin_Wide (geohash varchar not null, user varchar not null, time timestamp not null, weather varchar not null, temperature double, uv_index sint64, observed boolean not null, PRIMARY KEY((geohash, user, quantum(time, 15, 'm')), geohash, user, time))"}}'
+    $riak_admin bucket-type create 'GeoCheckin_Wide_1_5' '{"props": {"n_val": 3, "table_def": "CREATE TABLE GeoCheckin_Wide_1_5 (geohash varchar not null, user varchar not null, time timestamp not null, weather varchar not null, temperature double, uv_index sint64, observed boolean not null, sensor_data blob, PRIMARY KEY((geohash, user, quantum(time, 15, 'm')), geohash, user, time))"}}'
     $riak_admin bucket-type create WeatherByRegion '{"props": {"n_val": 3, "table_def": "CREATE TABLE WeatherByRegion (region varchar not null, state varchar not null, time timestamp not null, weather varchar not null, temperature double, uv_index sint64, observed boolean not null, PRIMARY KEY((region, state, quantum(time, 15, 'm')), region, state, time))"}}'
     set -o errexit
 
@@ -40,6 +41,7 @@ function riak_cluster_config
     $riak_admin bucket-type activate write_once
     $riak_admin bucket-type activate GeoCheckin
     $riak_admin bucket-type activate GeoCheckin_Wide
+    $riak_admin bucket-type activate GeoCheckin_Wide_1_5
     $riak_admin bucket-type activate WeatherByRegion
     set -o errexit
 
