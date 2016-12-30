@@ -8,8 +8,10 @@ env:
 script:
   - jdk_switcher use oraclejdk8
   - sudo ./travis-ci/riak-install -d "$RIAK_DOWNLOAD_URL"
-  - sudo ./setup-riak -s
-  - sudo riak-admin security disable
+  # NB: re-enable once Riak 2.3 ships with tls port support
+  # - sudo ./setup-riak -s
+  # - sudo riak-admin security disable
+  - sudo ./setup-riak
   - curl -4vvv localhost:8098/stats
 notifications:
   slack:

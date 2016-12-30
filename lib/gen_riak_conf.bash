@@ -9,6 +9,7 @@ function gen_riak_conf
     local -r security_key_file="$7"
     local -ir node_count="${8:-1}"
     local -r search="${9:-on}"
+    local -ir tls_port="${10:-0}"
 
     local -i start_percent=90
     if [[ $search == 'on' ]]
@@ -38,9 +39,11 @@ search.solr.start_timeout = 60s
 EOT
 
     if (( https_port > 0 )) && \
+       (( tls_port > 0 )) && \
     [[ -f $security_cacert_file && -f $security_cert_file && -f $security_key_file ]]
     then
         cat >> $out_file <<EOT
+listener.tls.internal = 0.0.0.0:$tls_port
 listener.https.internal = 0.0.0.0:$https_port
 ssl.cacertfile = $security_cacert_file
 ssl.certfile = $security_cert_file

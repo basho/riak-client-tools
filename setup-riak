@@ -194,8 +194,10 @@ function setup_cluster
     if [[ $opt_use_security == 'true' ]]
     then
         local -i https_port="$((http_port + 400))"
+        local -i tls_port="$((pb_port + 400))"
     else
         local -i https_port=0
+        local -i tls_port=0
     fi
 
     local adv_conf=''
@@ -216,7 +218,7 @@ function setup_cluster
 
         gen_riak_conf "$riak_conf" $http_port $pb_port $https_port \
             "$security_cacert_file" "$security_cert_file" "$security_key_file" \
-            "$node_count" "$opt_search"
+            "$node_count" "$opt_search" $tls_port
 
         gen_adv_conf "$adv_conf"
 
@@ -231,8 +233,10 @@ function setup_cluster
         if [[ $opt_use_security == 'true' ]]
         then
             (( https_port += 10 ))
+            (( tls_port += 10 ))
         else
             https_port=0
+            tls_port=0
         fi
     done
 
@@ -338,8 +342,10 @@ function setup_riak
     if [[ $opt_use_security == 'true' ]]
     then
         local -ir https_port="$((http_port + 400))"
+        local -ir tls_port="$((http_port + 400))"
     else
         local -ir https_port=0
+        local -ir tls_port=0
     fi
 
     local -r adv_conf='/etc/riak/advanced.config'
@@ -356,7 +362,7 @@ function setup_riak
 
     gen_riak_conf "$package_riak_conf" $http_port $pb_port $https_port \
         "$security_cacert_file" "$security_cert_file" "$security_key_file" \
-        "$node_count" "$opt_search"
+        "$node_count" "$opt_search" $tls_port
 
     gen_adv_conf "$adv_conf"
 
