@@ -42,6 +42,7 @@ declare riak_admin='riak-admin' # NB: will be set below
 declare -r default_cluster_path="$HOME/basho/riak/rel"
 declare -ir default_pb_port=8087
 declare -ir default_http_port=8098
+declare -r bucket_type_file_path="$script_path/bucket-types"
 
 set +o nounset
 if [[ -n $RIAK_CONF ]]
@@ -280,7 +281,7 @@ function setup_cluster
     commit_cluster "$riak_admin"
     if [[ $opt_setup_only == 'false' ]]
     then
-        riak_cluster_config "$riak_admin" "$starting_http_port" "$opt_strong_consistency" "$opt_use_security"
+        riak_cluster_config "$riak_admin" "$starting_http_port" "$opt_strong_consistency" "$opt_use_security" "$bucket_type_file_path"
     fi
     return 0
 }

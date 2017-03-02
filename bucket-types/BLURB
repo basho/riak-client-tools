@@ -1,0 +1,1 @@
+{"props": {"n_val": 3, "table_def": "CREATE TABLE BLURB (blurb blob not null, time timestamp not null, PRIMARY KEY((blurb, quantum(time, 15, 'm')), blurb, time))"}}
