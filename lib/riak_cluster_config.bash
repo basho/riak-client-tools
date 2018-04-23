@@ -12,6 +12,7 @@ function riak_cluster_config
     $riak_admin bucket-type create maps '{"props":{"datatype":"map"}}'
     $riak_admin bucket-type create sets '{"props":{"datatype":"set"}}'
     $riak_admin bucket-type create counters '{"props":{"datatype":"counter"}}'
+        $riak_admin bucket-type create gset_bucket '{"props":{"datatype":"gset"}}'
     $riak_admin bucket-type create other_counters '{"props":{"datatype":"counter","allow_mult":true}}'
     $riak_admin bucket-type create yokozuna '{"props":{}}'
 
@@ -29,6 +30,7 @@ function riak_cluster_config
     $riak_admin bucket-type activate no_siblings
     $riak_admin bucket-type activate maps
     $riak_admin bucket-type activate sets
+    $riak_admin bucket-type activate gset_bucket
     $riak_admin bucket-type activate counters
     $riak_admin bucket-type activate other_counters
     $riak_admin bucket-type activate yokozuna
